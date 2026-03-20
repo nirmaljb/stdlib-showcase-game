@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Angry Birds Stdlib Showcase</title>
+    <meta
+      name="description"
+      content="A canvas slingshot game that exposes the projectile math on screen."
+    />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <p class="eyebrow">Canvas Physics Showcase</p>
+        <h1>Angry Birds</h1>
+        <p class="deck">
+          Sling once. Read the math. Break the fortress.
+        </p>
+      </header>
+
+      <main class="layout">
+        <section class="stage-card">
+          <canvas
+            id="game"
+            width="1280"
+            height="720"
+            aria-label="Angry Birds game canvas"
+          ></canvas>
+        </section>
+
+        <aside class="sidebar">
+          <section class="info-card">
+            <h2>Controls</h2>
+            <p>Drag the red bird to aim, then release to launch.</p>
+            <p><kbd>M</kbd> toggle math overlay</p>
+            <p><kbd>R</kbd> restart level</p>
+            <p><kbd>N</kbd> next level after a clear</p>
+          </section>
+
+          <section class="info-card accent-card">
+            <h2>What Matters</h2>
+            <p>
+              Trajectory, collision, score, and wind all flow through stdlib
+              math modules, and the live overlay keeps those values visible.
+            </p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
