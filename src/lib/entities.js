@@ -28,10 +28,16 @@ export function createPig(config) {
     kind: "pig",
     x: config.x,
     y: config.y,
+    vx: 0,
+    vy: 0,
     radius: config.radius ?? 22,
+    mass: 1.2,
     maxHealth: config.health ?? 120,
     health: config.health ?? 120,
     alive: true,
+    grounded: false,
+    supportBlock: null,
+    restTimer: 0,
     wobbleSeed: (config.x + config.y) * 0.01
   };
 }

@@ -8,10 +8,11 @@ import {
   WORLD_HEIGHT,
   WORLD_WIDTH,
   advanceBird,
+  advancePig,
   applyExponentialDecay,
   launchStateFromPull
 } from "./physics.js";
-import { circleCircleContact, circleRectContact, impactSpeed, isApproaching } from "./collision.js";
+import { circleCircleContact, circleRectContact, impactSpeed, isApproaching, findSupportBlock, getSlidingDirection, pigBlockContact } from "./collision.js";
 import { createBird } from "./entities.js";
 import { createLevel, LEVELS } from "./level.js";
 import { comboMultiplier, createScoreState, impactForce, registerBonus, registerImpact, tickScoreState } from "./score.js";
@@ -289,6 +290,142 @@ function resolveCollisions(state) {
   }
 }
 
+/**
+ * Update support tracking for all pigs and apply physics when support is lost.
+ */
+function updatePigSupports(state) {
+  const { pigs, blocks } = state.level;
+
+  for (const pig of pigs) {
+    if (!pig.alive) {
+      continue;
+    }
+
+    // Check if pig is on the ground
+    const onGround = pig.y + pig.radius >= GROUND_Y - 2;
+    if (onGround && pig.grounded) {
+      pig.supportBlock = null;
+      continue;
+    }
+
+    // Find current support block
+    const currentSupport = findSupportBlock(pig, blocks);
+
+    // If pig had a support but it's now destroyed, start falling
+    if (pig.supportBlock && !pig.supportBlock.alive) {
+      pig.supportBlock = null;
+      // Give a small initial velocity to start the fall
+      if (pig.vy === 0) {
+        pig.vy = 20;
+      }
+    }
+
+    // If pig is on a new support block
+    if (currentSupport) {
+      // Check for sliding
+      const slideDir = getSlidingDirection(pig, currentSupport);
+      if (slideDir !== 0) {
+        // Apply sliding force
+        pig.vx += slideDir * 85 * FIXED_DT;
+        // Small upward impulse to lift off the block edge
+        if (pig.vy === 0) {
+          pig.vy = -15;
+        }
+      } else {
+        // Resting stably on block
+        pig.supportBlock = currentSupport;
+        pig.grounded = true;
+
+        // Settle the pig on top of the block
+        const blockTop = currentSupport.y - currentSupport.h / 2;
+        pig.y = blockTop - pig.radius;
+        pig.vy = 0;
+        pig.vx *= 0.85; // Friction
+      }
+    } else if (!onGround) {
+      // No support and not on ground - pig is falling
+      pig.supportBlock = null;
+      pig.grounded = false;
+    }
+  }
+}
+
+/**
+ * Resolve pig collisions with blocks during falling.
+ */
+function resolvePigBlockCollisions(state) {
+  const { pigs, blocks } = state.level;
+
+  for (const pig of pigs) {
+    if (!pig.alive || pig.grounded) {
+      continue;
+    }
+
+    for (const block of blocks) {
+      if (!block.alive) {
+        continue;
+      }
+
+      const contact = pigBlockContact(pig, block);
+      if (!contact) {
+        continue;
+      }
+
+      // Separate pig from block
+      pig.x += contact.normal.x * contact.overlap;
+      pig.y += contact.normal.y * contact.overlap;
+
+      // Check if landing on top of block
+      if (contact.normal.y < -0.7) {
+        // Landing on top
+        pig.vy = 0;
+        pig.vx *= 0.8;
+        pig.grounded = true;
+        pig.supportBlock = block;
+
+        // Apply landing damage if falling fast
+        const impactVelocity = magnitude({ x: pig.vx, y: pig.vy });
+        if (impactVelocity > 80) {
+          const damage = impactVelocity * 0.12;
+          pig.health -= damage;
+          state.shake = max(state.shake, min(damage / 200, 0.5));
+        }
+      } else if (contact.normal.y > 0.7) {
+        // Hit from below - bounce down
+        pig.vy = max(pig.vy, 30);
+      } else {
+        // Side collision - bounce horizontally
+        pig.vx = -pig.vx * 0.5;
+      }
+
+      if (pig.health <= 0) {
+        pig.alive = false;
+        registerBonus(state.score, "Gravity Kill", 180);
+      }
+    }
+  }
+}
+
+/**
+ * Update all pig physics each tick.
+ */
+function updatePigs(state) {
+  updatePigSupports(state);
+
+  for (const pig of state.level.pigs) {
+    if (!pig.alive) {
+      continue;
+    }
+
+    // Only advance physics if pig is not stably resting
+    if (!pig.grounded || magnitude({ x: pig.vx, y: pig.vy }) > 8) {
+      advancePig(pig, FIXED_DT);
+    }
+  }
+
+  resolvePigBlockCollisions(state);
+}
+
 function finalizeShot(state) {
   const bird = state.activeBird;
   if (!bird || bird.spent) {
@@ -367,6 +504,9 @@ function tick(state) {
       state.activeBird = null;
     }
   }
+
+  // Update pig physics (falling, sliding when support is destroyed)
+  updatePigs(state);
 
   evaluateProgress(state);
 }

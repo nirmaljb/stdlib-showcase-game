@@ -158,3 +158,48 @@ export function advanceBird(bird, dt, wind, groundY = GROUND_Y) {
     bird.restTimer = 0;
   }
 }
+
+export function advancePig(pig, dt, groundY = GROUND_Y) {
+  if (!pig.alive) {
+    return;
+  }
+
+  // Apply gravity
+  pig.vy += GRAVITY * dt;
+  pig.x += pig.vx * dt;
+  pig.y += pig.vy * dt;
+
+  // Ground collision
+  const grounded = pig.y + pig.radius >= groundY;
+  if (grounded) {
+    pig.y = groundY - pig.radius;
+
+    // Bounce with damping on ground hit
+    if (abs(pig.vy) > 60) {
+      // Take fall damage proportional to impact velocity
+      const fallDamage = abs(pig.vy) * 0.18;
+      pig.health -= fallDamage;
+
+      if (pig.health <= 0) {
+        pig.alive = false;
+      }
+
+      pig.vy *= -0.25;
+    } else {
+      pig.vy = 0;
+    }
+
+    // Friction on ground
+    pig.vx = applyExponentialDecay(pig.vx, 3.5, dt) * 0.88;
+    pig.grounded = true;
+  } else {
+    pig.grounded = false;
+  }
+
+  // Track rest state
+  if (pig.grounded && magnitude({ x: pig.vx, y: pig.vy }) < 16) {
+    pig.restTimer += dt;
+  } else {
+    pig.restTimer = 0;
+  }
+}
