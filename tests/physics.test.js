@@ -22,7 +22,7 @@ import {
 import { magnitude } from "../src/lib/vector.js";
 import { approx, approxPoint } from "./helpers.js";
 import PI from "@stdlib/constants-float64-pi";
-import { e as E } from "@stdlib/constants-float64-e";
+import E from "@stdlib/constants-float64-e";
 
 test("pull and launch helpers clamp to the tuned sling limits", () => {
   const rawPull = { x: -300, y: 0 };

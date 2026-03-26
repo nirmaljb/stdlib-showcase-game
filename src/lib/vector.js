@@ -1,11 +1,11 @@
-import atan2 from "@stdlib/math/base/special/atan2/lib/index.js";
-import cos from "@stdlib/math/base/special/cos/lib/index.js";
-import hypot from "@stdlib/math/base/special/hypot/lib/index.js";
-import max from "@stdlib/math/base/special/max/lib/index.js";
-import sin from "@stdlib/math/base/special/sin/lib/index.js";
+import atan2 from "@stdlib/math-base-special-atan2/lib/index.js";
+import cos from "@stdlib/math-base-special-cos/lib/index.js";
+import hypot from "@stdlib/math-base-special-hypot/lib/index.js";
+import max from "@stdlib/math-base-special-max/lib/index.js";
+import sin from "@stdlib/math-base-special-sin/lib/index.js";
 import eps from "@stdlib/constants-float64-eps";
 
-const EPSILON = 1e-6;
+const EPSILON = eps;
 
 export function add(a, b) {
   return { x: a.x + b.x, y: a.y + b.y };
