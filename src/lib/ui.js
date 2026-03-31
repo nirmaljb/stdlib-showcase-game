@@ -1,5 +1,4 @@
 import abs from "@stdlib/math-base-special-abs/lib/index.js";
-import max from "@stdlib/math-base-special-max/lib/index.js";
 import min from "@stdlib/math-base-special-min/lib/index.js";
 import round from "@stdlib/math-base-special-round/lib/index.js";
 import PI from "@stdlib/constants-float64-pi/lib/index.js";

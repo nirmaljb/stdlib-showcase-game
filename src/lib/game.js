@@ -1,6 +1,6 @@
 import max from "@stdlib/math-base-special-max/lib/index.js";
 import min from "@stdlib/math-base-special-min/lib/index.js";
-import round from "@stdlib/math-base-special-round/lib/index.js";
+
 import {
   FIXED_DT,
   GROUND_Y,
