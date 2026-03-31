@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import test from "tape";
 import {
   GROUND_Y,
   GRAVITY,
@@ -25,60 +24,64 @@ import { approx, approxPoint } from "./helpers.js";
 import PI from "@stdlib/constants-float64-pi";
 import E from "@stdlib/constants-float64-e";
 
-test("pull and launch helpers clamp to the tuned sling limits", () => {
+test("pull and launch helpers clamp to the tuned sling limits", (t) => {
   const rawPull = { x: -300, y: 0 };
   const clamped = clampPull(rawPull);
-  approx(magnitude(clamped), MAX_PULL);
-  approx(launchSpeedFromPull(rawPull), MAX_LAUNCH_SPEED);
+  approx(t, magnitude(clamped), MAX_PULL);
+  approx(t, launchSpeedFromPull(rawPull), MAX_LAUNCH_SPEED);
 
   const anchor = { x: 196, y: 598 };
   const launch = launchStateFromPull(anchor, rawPull, 0);
-  approx(magnitude(launch.pull), MAX_PULL);
-  approx(magnitude({
+  approx(t, magnitude(launch.pull), MAX_PULL);
+  approx(t, magnitude({
     x: launch.origin.x - anchor.x,
     y: launch.origin.y - anchor.y
   }), RELEASE_CLEARANCE);
+  t.end();
 });
 
-test("projectile helpers match analytical expectations", () => {
+test("projectile helpers match analytical expectations", (t) => {
   const vy0 = -50;
   const duration = timeOfFlight(vy0, 10);
-  approx(duration, 10);
-  approx(timeToVerticalPosition(80, vy0, 80, 10), duration);
+  approx(t, duration, 10);
+  approx(t, timeToVerticalPosition(80, vy0, 80, 10), duration);
 
   const distance = range(100, -PI / 4, 10, 20);
-  approx(distance, 3000);
+  approx(t, distance, 3000);
 
   const height = maxHeight(vy0, 10);
-  approx(height, 125);
+  approx(t, height, 125);
 
   const impact = positionAt({ x: 5, y: 80 }, { x: 70, y: vy0 }, 10, 20, duration);
-  approxPoint(impact, { x: 1705, y: 80 });
+  approxPoint(t, impact, { x: 1705, y: 80 });
+  t.end();
 });
 
-test("release and ground-contact metrics use the visible projectile path", () => {
+test("release and ground-contact metrics use the visible projectile path", (t) => {
   const anchor = { x: 196, y: GROUND_Y - 42 };
   const radius = 18;
   const launch = launchStateFromPull(anchor, { x: -100, y: 60 }, 0, radius);
   const groundTime = timeToVerticalPosition(launch.origin.y, launch.velocity.y, GROUND_Y - radius, GRAVITY);
   const impact = positionAt(launch.origin, launch.velocity, GRAVITY, 0, groundTime);
 
-  assert.deepEqual(releasePoint(anchor, { x: 0, y: 0 }), anchor);
-  approx(launch.timeToGround, groundTime);
-  approx(impact.y, GROUND_Y - radius);
-  assert.ok(launch.origin.x > anchor.x);
-  assert.ok(launch.origin.y < anchor.y);
-  assert.ok(launch.timeToGround > launch.timeOfFlight);
-  assert.ok(launch.groundRange > launch.range);
+  t.deepEqual(releasePoint(anchor, { x: 0, y: 0 }), anchor);
+  approx(t, launch.timeToGround, groundTime);
+  approx(t, impact.y, GROUND_Y - radius);
+  t.ok(launch.origin.x > anchor.x);
+  t.ok(launch.origin.y < anchor.y);
+  t.ok(launch.timeToGround > launch.timeOfFlight);
+  t.ok(launch.groundRange > launch.range);
+  t.end();
 });
 
-test("wrapAngle and exponential decay remain bounded and predictable", () => {
-  approx(wrapAngle(-0.25), (2 * PI) - 0.25);
-  approx(wrapAngle(9 * PI), PI);
-  approx(applyExponentialDecay(10, 0.5, 2), 10 / E, 1e-9);
+test("wrapAngle and exponential decay remain bounded and predictable", (t) => {
+  approx(t, wrapAngle(-0.25), (2 * PI) - 0.25);
+  approx(t, wrapAngle(9 * PI), PI);
+  approx(t, applyExponentialDecay(10, 0.5, 2), 10 / E, 1e-9);
+  t.end();
 });
 
-test("advanceBird bounces fast impacts and accumulates rest on soft landings", () => {
+test("advanceBird bounces fast impacts and accumulates rest on soft landings", (t) => {
   const bouncingBird = {
     x: 0,
     y: GROUND_Y - 20,
@@ -89,10 +92,10 @@ test("advanceBird bounces fast impacts and accumulates rest on soft landings", (
     restTimer: 0
   };
   advanceBird(bouncingBird, 0.1, 0);
-  approx(bouncingBird.y, GROUND_Y - bouncingBird.radius);
-  assert.ok(bouncingBird.vy < 0);
-  assert.equal(bouncingBird.restTimer, 0);
-  assert.ok(bouncingBird.spin >= 0 && bouncingBird.spin < 2 * PI);
+  approx(t, bouncingBird.y, GROUND_Y - bouncingBird.radius);
+  t.ok(bouncingBird.vy < 0);
+  t.equal(bouncingBird.restTimer, 0);
+  t.ok(bouncingBird.spin >= 0 && bouncingBird.spin < 2 * PI);
 
   const restingBird = {
     x: 0,
@@ -104,13 +107,13 @@ test("advanceBird bounces fast impacts and accumulates rest on soft landings", (
     restTimer: 0
   };
   advanceBird(restingBird, 0.1, 0);
-  approx(restingBird.y, GROUND_Y - restingBird.radius);
-  assert.equal(restingBird.vy, 0);
-  approx(restingBird.restTimer, 0.1);
+  approx(t, restingBird.y, GROUND_Y - restingBird.radius);
+  t.equal(restingBird.vy, 0);
+  approx(t, restingBird.restTimer, 0.1);
+  t.end();
 });
 
-test("advancePig applies gravity and handles ground collision with fall damage", () => {
-  // Pig falling with high velocity should take fall damage
+test("advancePig applies gravity and handles ground collision with fall damage", (t) => {
   const fallingPig = {
     x: 100,
     y: GROUND_Y - 50,
@@ -129,14 +132,14 @@ test("advancePig applies gravity and handles ground collision with fall damage",
     advancePig(fallingPig, 0.02);
   }
 
-  // Pig should be at or very close to ground level (within a few pixels due to bounce settling)
-  assert.ok(fallingPig.y >= GROUND_Y - fallingPig.radius - 5);
-  assert.ok(fallingPig.y <= GROUND_Y - fallingPig.radius + 1);
-  assert.ok(fallingPig.health < 100); // Should have taken fall damage
-  assert.equal(fallingPig.grounded, true);
+  t.ok(fallingPig.y >= GROUND_Y - fallingPig.radius - 5);
+  t.ok(fallingPig.y <= GROUND_Y - fallingPig.radius + 1);
+  t.ok(fallingPig.health < 100);
+  t.equal(fallingPig.grounded, true);
+  t.end();
 });
 
-test("advancePig accumulates rest time when pig is stationary on ground", () => {
+test("advancePig accumulates rest time when pig is stationary on ground", (t) => {
   const restingPig = {
     x: 100,
     y: GROUND_Y - 22,
@@ -151,11 +154,12 @@ test("advancePig accumulates rest time when pig is stationary on ground", () => 
   };
 
   advancePig(restingPig, 0.1);
-  approx(restingPig.restTimer, 0.1);
-  assert.equal(restingPig.grounded, true);
+  approx(t, restingPig.restTimer, 0.1);
+  t.equal(restingPig.grounded, true);
+  t.end();
 });
 
-test("advancePig does not process dead pigs", () => {
+test("advancePig does not process dead pigs", (t) => {
   const deadPig = {
     x: 100,
     y: 300,
@@ -172,11 +176,11 @@ test("advancePig does not process dead pigs", () => {
   const initialY = deadPig.y;
   advancePig(deadPig, 0.1);
 
-  // Dead pig should not move
-  assert.equal(deadPig.y, initialY);
+  t.equal(deadPig.y, initialY);
+  t.end();
 });
 
-test("advancePig applies gravity correctly over time", () => {
+test("advancePig applies gravity correctly over time", (t) => {
   const pig = {
     x: 100,
     y: 200,
@@ -193,19 +197,15 @@ test("advancePig applies gravity correctly over time", () => {
   const dt = 0.1;
   const initialY = pig.y;
 
-  // After one tick, velocity should increase by gravity * dt
   advancePig(pig, dt);
 
-  // vy should be GRAVITY * dt = 620 * 0.1 = 62
-  approx(pig.vy, GRAVITY * dt);
+  approx(t, pig.vy, GRAVITY * dt);
 
-  // Position should be initial + vy * dt (using initial vy of 0, so mostly gravity effect)
-  // y = y0 + vy0*dt + 0.5*g*dt^2, but advancePig applies velocity after gravity
-  // So: vy becomes 62, then y += 62 * 0.1 = 6.2
-  assert.ok(pig.y > initialY);
+  t.ok(pig.y > initialY);
+  t.end();
 });
 
-test("advancePig applies horizontal friction on ground", () => {
+test("advancePig applies horizontal friction on ground", (t) => {
   const pig = {
     x: 100,
     y: GROUND_Y - 22,
@@ -221,25 +221,24 @@ test("advancePig applies horizontal friction on ground", () => {
 
   const initialVx = pig.vx;
 
-  // Advance a few ticks
   for (let i = 0; i < 10; i++) {
     advancePig(pig, 0.02);
   }
 
-  // Horizontal velocity should decrease due to friction
-  assert.ok(pig.vx < initialVx);
-  assert.ok(pig.vx > 0); // But still moving right
+  t.ok(pig.vx < initialVx);
+  t.ok(pig.vx > 0);
+  t.end();
 });
 
-test("advancePig kills pig when health drops to zero from fall damage", () => {
+test("advancePig kills pig when health drops to zero from fall damage", (t) => {
   const pig = {
     x: 100,
-    y: 100, // High up
+    y: 100,
     vx: 0,
     vy: 0,
     radius: 22,
     mass: 1.2,
-    health: 30, // Low health
+    health: 30,
     alive: true,
     grounded: false,
     restTimer: 0
@@ -251,17 +250,17 @@ test("advancePig kills pig when health drops to zero from fall damage", () => {
     if (!pig.alive) break;
   }
 
-  // Pig should be dead from fall damage (started with only 30 health)
-  assert.equal(pig.alive, false);
-  assert.ok(pig.health <= 0);
+  t.equal(pig.alive, false);
+  t.ok(pig.health <= 0);
+  t.end();
 });
 
-test("advancePig soft landing does not cause damage", () => {
+test("advancePig soft landing does not cause damage", (t) => {
   const pig = {
     x: 100,
-    y: GROUND_Y - 30, // Just slightly above ground
+    y: GROUND_Y - 30,
     vx: 0,
-    vy: 40, // Slow fall, below damage threshold of 60
+    vy: 40,
     radius: 22,
     mass: 1.2,
     health: 100,
@@ -272,7 +271,7 @@ test("advancePig soft landing does not cause damage", () => {
 
   advancePig(pig, 0.02);
 
-  // Should hit ground but not take damage due to low velocity
-  assert.equal(pig.health, 100);
-  assert.equal(pig.alive, true);
+  t.equal(pig.health, 100);
+  t.equal(pig.alive, true);
+  t.end();
 });
